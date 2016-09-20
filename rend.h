@@ -55,6 +55,12 @@ int GzPutAttribute(GzRender	*render, int numAttributes, GzToken	*nameList,
 int GzPutTriangle(GzRender *render, int	numParts, GzToken *nameList,
 	GzPointer *valueList);
 
+// Helper Functions
+void sortTriangleVertices(float * values, int ** sortedIndices);
+int sign(float value);
+void getPlane(GzCoord * triangleVertices, float * A, float * B, float * C, float * D);
+float interpolateZ(float A, float B, float C, float D, float x, float y);
+
 // HW3
 int GzPutCamera(GzRender *render, GzCamera *camera);
 int GzPushMatrix(GzRender *render, GzMatrix	matrix);

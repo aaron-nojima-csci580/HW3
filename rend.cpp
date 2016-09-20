@@ -63,9 +63,50 @@ int GzNewRender(GzRender **render, GzDisplay	*display)
 - save the pointer to display 
 - init default camera 
 */ 
+	if (render != NULL && display != NULL)
+	{
+		// malloc a renderer struct
+		*render = (GzRender *)malloc(sizeof(GzRender));
 
-	return GZ_SUCCESS;
+		// TODO: setup Xsp and anything only done once
+		int xs = display->xres;
+		int ys = display->yres;
+		(*render)->Xsp[0][0] = xs / 2.0f;
+		(*render)->Xsp[0][1] = 0;
+		(*render)->Xsp[0][2] = 0;
+		(*render)->Xsp[0][3] = xs / 2.0f;
+		(*render)->Xsp[1][0] = 0;
+		(*render)->Xsp[1][1] = -ys / 2.0f;
+		(*render)->Xsp[1][2] = 0;
+		(*render)->Xsp[1][3] = ys / 2.0f;
+		(*render)->Xsp[2][0] = 0;
+		(*render)->Xsp[2][1] = 0;
+		(*render)->Xsp[2][2] = MAXINT;
+		(*render)->Xsp[2][3] = 0;
+		(*render)->Xsp[3][0] = 0;
+		(*render)->Xsp[3][1] = 0;
+		(*render)->Xsp[3][2] = 0;
+		(*render)->Xsp[3][3] = 1;
+		(*render)->matlevel = -1;
 
+		// save the pointer to display
+		(*render)->display = display;
+
+		// init default camera
+		(*render)->camera.FOV = DEFAULT_FOV;
+		(*render)->camera.lookat[X] = 0;
+		(*render)->camera.lookat[Y] = 0;
+		(*render)->camera.lookat[Z] = 0;
+		(*render)->camera.position[X] = DEFAULT_IM_X;
+		(*render)->camera.position[Y] = DEFAULT_IM_Y;
+		(*render)->camera.position[Z] = DEFAULT_IM_Z;
+		(*render)->camera.worldup[X] = 0;
+		(*render)->camera.worldup[Y] = 1;
+		(*render)->camera.worldup[Z] = 0;
+
+		return GZ_SUCCESS;
+	}
+	return GZ_FAILURE;
 }
 
 
@@ -74,6 +115,9 @@ int GzFreeRender(GzRender *render)
 /* 
 -free all renderer resources
 */
+	if (render != NULL) {
+		free(render);
+	}
 	return GZ_SUCCESS;
 }
 
@@ -86,7 +130,32 @@ int GzBeginRender(GzRender *render)
 - init Ximage - put Xsp at base of stack, push on Xpi and Xiw 
 - now stack contains Xsw and app can push model Xforms when needed 
 */ 
-	return GZ_SUCCESS;
+	int status = GZ_SUCCESS;
+	if (render != NULL && render->display != NULL) {
+		status |= GzInitDisplay(render->display);
+		render->flatcolor[RED] = 0;
+		render->flatcolor[GREEN] = 0;
+		render->flatcolor[BLUE] = 0;
+
+		// TODO: do I need to do this now?
+		(render)->camera.Xpi[0][0] = 1;
+		(render)->camera.Xpi[0][1] = 0;
+		(render)->camera.Xpi[0][2] = 0;
+		(render)->camera.Xpi[0][3] = 0;
+		(render)->camera.Xpi[1][0] = 0;
+		(render)->camera.Xpi[1][1] = 1;
+		(render)->camera.Xpi[1][2] = 0;
+		(render)->camera.Xpi[1][3] = 0;
+		(render)->camera.Xpi[2][0] = 0;
+		(render)->camera.Xpi[2][1] = 0;
+		(render)->camera.Xpi[2][2] = 1 / tan(((render)->camera.FOV / 2) * (3.1415926535 / 180));
+		(render)->camera.Xpi[2][3] = 0;
+		(render)->camera.Xpi[3][0] = 0;
+		(render)->camera.Xpi[3][1] = 0;
+		(render)->camera.Xpi[3][2] = 0;
+		(render)->camera.Xpi[3][3] = 1;
+	}
+	return status;
 }
 
 int GzPutCamera(GzRender *render, GzCamera *camera)
@@ -124,7 +193,27 @@ int GzPutAttribute(GzRender	*render, int numAttributes, GzToken	*nameList,
 - later set shaders, interpolaters, texture maps, and lights
 */
 	
-	return GZ_SUCCESS;
+	if (render != NULL) {
+		for (int i = 0; i < numAttributes; ++i) {
+			switch (nameList[i]) {
+			case GZ_RGB_COLOR:
+				// TODO: Do I have to increment through tokens (ints) and use (sizeof) token type
+				// to increment the ponter through the value list
+				GzColor * color = (GzColor *)valueList[i];
+				// clamp color values
+				(*color)[RED] = fmaxf(0, fminf(4095, (*color)[RED]));
+				(*color)[GREEN] = fmaxf(0, fminf(4095, (*color)[GREEN]));
+				(*color)[BLUE] = fmaxf(0, fminf(4095, (*color)[BLUE]));
+				render->flatcolor[RED] = (*color)[RED];
+				render->flatcolor[GREEN] = (*color)[GREEN];
+				render->flatcolor[BLUE] = (*color)[BLUE];
+				break;
+				// later set shaders, interpolaters, texture maps, and lights
+			}
+		}
+		return GZ_SUCCESS;
+	}
+	return GZ_FAILURE;
 }
 
 int GzPutTriangle(GzRender	*render, int numParts, GzToken *nameList, GzPointer	*valueList)
@@ -142,6 +231,74 @@ int GzPutTriangle(GzRender	*render, int numParts, GzToken *nameList, GzPointer	*
 }
 
 /* NOT part of API - just for general assistance */
+
+void sortTriangleVertices(float * values, int ** sortedIndices)
+{
+	// Default order
+	*sortedIndices = (int *)malloc(sizeof(int) * 3);
+	(*sortedIndices)[0] = 0;
+	(*sortedIndices)[1] = 1;
+	(*sortedIndices)[2] = 2;
+
+	float v0 = values[0];
+	float v1 = values[1];
+	float v2 = values[2];
+
+	int tempIndex;
+	float tempFloat;
+
+	if (v0 > v1) {
+		tempIndex = (*sortedIndices)[0];
+		(*sortedIndices)[0] = (*sortedIndices)[1];
+		(*sortedIndices)[1] = tempIndex;
+		tempFloat = v0;
+		v0 = v1;
+		v1 = tempFloat;
+	}
+	if (v1 > v2) {
+		tempIndex = (*sortedIndices)[1];
+		(*sortedIndices)[1] = (*sortedIndices)[2];
+		(*sortedIndices)[2] = tempIndex;
+		tempFloat = v1;
+		v1 = v2;
+		v2 = tempFloat;
+	}
+	if (v0 > v1) {
+		tempIndex = (*sortedIndices)[0];
+		(*sortedIndices)[0] = (*sortedIndices)[1];
+		(*sortedIndices)[1] = tempIndex;
+		tempFloat = v0;
+		v0 = v1;
+		v1 = tempFloat;
+	}
+}
+
+int sign(float value) {
+	if (value == 0) {
+		return 0;
+	}
+	return fabsf(value) / value;
+}
+
+void getPlane(GzCoord * triangleVertices, float * A, float * B, float * C, float * D) {
+	float X1 = triangleVertices[1][X] - triangleVertices[0][X];
+	float Y1 = triangleVertices[1][Y] - triangleVertices[0][Y];
+	float Z1 = triangleVertices[1][Z] - triangleVertices[0][Z];
+	float X2 = triangleVertices[2][X] - triangleVertices[0][X];
+	float Y2 = triangleVertices[2][Y] - triangleVertices[0][Y];
+	float Z2 = triangleVertices[2][Z] - triangleVertices[0][Z];
+	*A = Y1*Z2 - Z1*Y2;
+	*B = Z1*X2 - X1*Z2;
+	*C = X1*Y2 - Y1*X2;
+	float x = triangleVertices[0][X];
+	float y = triangleVertices[0][Y];
+	float z = triangleVertices[0][Z];
+	*D = -1 * ((*A)*x + (*B)*y + (*C)*z);
+}
+
+float interpolateZ(float A, float B, float C, float D, float x, float y) {
+	return -1 * (A*x + B*y + D) / C;
+}
 
 short	ctoi(float color)		/* convert float color to GzIntensity short */
 {
