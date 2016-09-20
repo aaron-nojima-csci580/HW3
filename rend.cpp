@@ -6,12 +6,30 @@
 #include	"Gz.h"
 #include	"rend.h"
 
+#define PI (3.1415926535f)
 
 int GzRotXMat(float degree, GzMatrix mat)
 {
 // Create rotate matrix : rotate along x axis
 // Pass back the matrix using mat value
-
+	if (mat == NULL)
+	{
+		return GZ_FAILURE;
+	}
+	float rDegree = degree * (PI / 180);
+	for (int i = 0; i < 4; ++i)
+	{
+		for (int j = 0; j < 4; ++j)
+		{
+			mat[i][j] = 0;
+		}
+	}
+	mat[0][0] = 1;
+	mat[1][1] = cos(rDegree);
+	mat[1][2] = -sin(rDegree);
+	mat[2][1] = sin(rDegree);
+	mat[2][2] = cos(rDegree);
+	mat[3][3] = 1;
 	return GZ_SUCCESS;
 }
 
@@ -20,7 +38,24 @@ int GzRotYMat(float degree, GzMatrix mat)
 {
 // Create rotate matrix : rotate along y axis
 // Pass back the matrix using mat value
-
+	if (mat == NULL)
+	{
+		return GZ_FAILURE;
+	}
+	float rDegree = degree * (PI / 180);
+	for (int i = 0; i < 4; ++i)
+	{
+		for (int j = 0; j < 4; ++j)
+		{
+			mat[i][j] = 0;
+		}
+	}
+	mat[0][0] = cos(rDegree);
+	mat[0][2] = sin(rDegree);
+	mat[1][1] = 1;
+	mat[2][0] = -sin(rDegree);
+	mat[2][2] = cos(rDegree);
+	mat[3][3] = 1;
 	return GZ_SUCCESS;
 }
 
@@ -29,7 +64,24 @@ int GzRotZMat(float degree, GzMatrix mat)
 {
 // Create rotate matrix : rotate along z axis
 // Pass back the matrix using mat value
-
+	if (mat == NULL)
+	{
+		return GZ_FAILURE;
+	}
+	float rDegree = degree * (PI / 180);
+	for (int i = 0; i < 4; ++i)
+	{
+		for (int j = 0; j < 4; ++j)
+		{
+			mat[i][j] = 0;
+		}
+	}
+	mat[0][0] = cos(rDegree);
+	mat[0][1] = -sin(rDegree);
+	mat[1][0] = sin(rDegree);
+	mat[1][1] = cos(rDegree);
+	mat[2][2] = 1;
+	mat[3][3] = 1;
 	return GZ_SUCCESS;
 }
 
@@ -38,7 +90,21 @@ int GzTrxMat(GzCoord translate, GzMatrix mat)
 {
 // Create translation matrix
 // Pass back the matrix using mat value
-
+	if (translate == NULL || mat == NULL)
+	{
+		return GZ_FAILURE;
+	}
+	for (int i = 0; i < 4; ++i)
+	{
+		for (int j = 0; j < 4; ++j)
+		{
+			mat[i][j] = 0;
+		}
+	}
+	mat[0][3] = translate[X];
+	mat[1][3] = translate[Y];
+	mat[2][3] = translate[Z];
+	mat[3][3] = 1;
 	return GZ_SUCCESS;
 }
 
@@ -47,7 +113,21 @@ int GzScaleMat(GzCoord scale, GzMatrix mat)
 {
 // Create scaling matrix
 // Pass back the matrix using mat value
-
+	if (scale == NULL || mat == NULL)
+	{
+		return GZ_FAILURE;
+	}
+	for (int i = 0; i < 4; ++i)
+	{
+		for (int j = 0; j < 4; ++j)
+		{
+			mat[i][j] = 0;
+		}
+	}
+	mat[0][0] = scale[X];
+	mat[1][1] = scale[Y];
+	mat[2][2] = scale[Z];
+	mat[3][3] = 1;
 	return GZ_SUCCESS;
 }
 
@@ -148,7 +228,7 @@ int GzBeginRender(GzRender *render)
 		(render)->camera.Xpi[1][3] = 0;
 		(render)->camera.Xpi[2][0] = 0;
 		(render)->camera.Xpi[2][1] = 0;
-		(render)->camera.Xpi[2][2] = 1 / tan(((render)->camera.FOV / 2) * (3.1415926535 / 180));
+		(render)->camera.Xpi[2][2] = 1 / tan(((render)->camera.FOV / 2) * (PI / 180));
 		(render)->camera.Xpi[2][3] = 0;
 		(render)->camera.Xpi[3][0] = 0;
 		(render)->camera.Xpi[3][1] = 0;
