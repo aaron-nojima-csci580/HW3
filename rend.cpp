@@ -252,6 +252,53 @@ int GzPushMatrix(GzRender *render, GzMatrix	matrix)
 - push a matrix onto the Ximage stack
 - check for stack overflow
 */
+	// check arguments
+	if (render == NULL || matrix == NULL)
+	{
+		return GZ_FAILURE;
+	}
+	// check for stack overflow
+	if (render->matlevel == MATLEVELS)
+	{
+		return GZ_FAILURE;
+	}
+	// If the stack is empty, push matrix
+	if (render->matlevel == -1) {
+		render->matlevel++;
+		for (int i = 0; i < 4; ++i)
+		{
+			for (int j = 0; j < 4; ++j)
+			{
+				render->Ximage[render->matlevel][i][j] = matrix[i][j];
+			}
+		}
+	}
+	// otherwise push top matrix * matrix
+	else
+	{
+		// calculate matrix multiplication
+		GzMatrix newMatrix;
+		for (int i = 0; i < 4; ++i)
+		{
+			for (int j = 0; j < 4; ++j)
+			{
+				newMatrix[i][j] = 0;
+				for (int k = 0; j < 4; ++k)
+				{
+					newMatrix[i][j] += render->Ximage[render->matlevel][i][k] * matrix[k][j];
+				}
+			}
+		}
+		// push new matrix
+		render->matlevel++;
+		for (int i = 0; i < 4; ++i)
+		{
+			for (int j = 0; j < 4; ++j)
+			{
+				render->Ximage[render->matlevel][i][j] = newMatrix[i][j];
+			}
+		}
+	}
 	return GZ_SUCCESS;
 }
 
@@ -261,6 +308,18 @@ int GzPopMatrix(GzRender *render)
 - pop a matrix off the Ximage stack
 - check for stack underflow
 */
+	// check arguments
+	if (render == NULL)
+	{
+		return GZ_FAILURE;
+	}
+	// check for stack underflow
+	if (render->matlevel < 0)
+	{
+		return GZ_FAILURE;
+	}
+	// pop a matrix off the Ximage stack (just decrease top pointer)
+	render->matlevel--;
 	return GZ_SUCCESS;
 }
 
