@@ -60,6 +60,7 @@ void sortTriangleVertices(float * values, int ** sortedIndices);
 int sign(float value);
 void getPlane(GzCoord * triangleVertices, float * A, float * B, float * C, float * D);
 float interpolateZ(float A, float B, float C, float D, float x, float y);
+short ctoi(float color);
 
 // HW3
 int GzPutCamera(GzRender *render, GzCamera *camera);
