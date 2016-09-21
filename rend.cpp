@@ -194,7 +194,8 @@ int GzFreeRender(GzRender *render)
 /* 
 -free all renderer resources
 */
-	if (render != NULL) {
+	if (render != NULL)
+	{
 		free(render);
 	}
 	return GZ_SUCCESS;
@@ -318,7 +319,6 @@ int GzPutCamera(GzRender *render, GzCamera *camera)
 /*
 - overwrite renderer camera structure with new camera definition
 */
-	// TODO
 	if (render == NULL)
 	{
 		return GZ_FAILURE;
@@ -357,7 +357,8 @@ int GzPushMatrix(GzRender *render, GzMatrix	matrix)
 		return GZ_FAILURE;
 	}
 	// If the stack is empty, push matrix
-	if (render->matlevel == -1) {
+	if (render->matlevel == -1)
+	{
 		render->matlevel++;
 		for (int i = 0; i < 4; ++i)
 		{
@@ -425,22 +426,25 @@ int GzPutAttribute(GzRender	*render, int numAttributes, GzToken	*nameList,
 - set renderer attribute states (e.g.: GZ_RGB_COLOR default color)
 - later set shaders, interpolaters, texture maps, and lights
 */
-	if (render != NULL) {
-		for (int i = 0; i < numAttributes; ++i) {
-			switch (nameList[i]) {
-			case GZ_RGB_COLOR:
-				// LATER: Do I have to increment through tokens (ints) and use (sizeof) token type
-				// to increment the ponter through the value list
-				GzColor * color = (GzColor *)valueList[i];
-				// clamp color values
-				(*color)[RED] = fmaxf(0, fminf(4095, (*color)[RED]));
-				(*color)[GREEN] = fmaxf(0, fminf(4095, (*color)[GREEN]));
-				(*color)[BLUE] = fmaxf(0, fminf(4095, (*color)[BLUE]));
-				render->flatcolor[RED] = (*color)[RED];
-				render->flatcolor[GREEN] = (*color)[GREEN];
-				render->flatcolor[BLUE] = (*color)[BLUE];
-				break;
-				// later set shaders, interpolaters, texture maps, and lights
+	if (render != NULL)
+	{
+		for (int i = 0; i < numAttributes; ++i)
+		{
+			switch (nameList[i])
+			{
+				case GZ_RGB_COLOR:
+					// LATER: Do I have to increment through tokens (ints) and use (sizeof) token type
+					// to increment the ponter through the value list
+					GzColor * color = (GzColor *)valueList[i];
+					// clamp color values
+					(*color)[RED] = fmaxf(0, fminf(4095, (*color)[RED]));
+					(*color)[GREEN] = fmaxf(0, fminf(4095, (*color)[GREEN]));
+					(*color)[BLUE] = fmaxf(0, fminf(4095, (*color)[BLUE]));
+					render->flatcolor[RED] = (*color)[RED];
+					render->flatcolor[GREEN] = (*color)[GREEN];
+					render->flatcolor[BLUE] = (*color)[BLUE];
+					break;
+					// later set shaders, interpolaters, texture maps, and lights
 			}
 		}
 		return GZ_SUCCESS;
@@ -548,25 +552,30 @@ int GzPutTriangle(GzRender	*render, int numParts, GzToken *nameList, GzPointer	*
 				int edgeTypes[] = { UNDEFINED_EDGE, UNDEFINED_EDGE, UNDEFINED_EDGE };
 
 				// Check for Horizontal edges first
-				if (Vertices[0][Y] == Vertices[1][Y] && Vertices[1][Y] == Vertices[2][Y]) {
+				if (Vertices[0][Y] == Vertices[1][Y] && Vertices[1][Y] == Vertices[2][Y])
+				{
 					// All points have same Y value (horizontal lines)
 					// TODO: what???
 					// Assuming we won't have to deal with this for now?
 					return GZ_SUCCESS;
 				}
-				else if (Vertices[0][Y] == Vertices[1][Y]) {
+				else if (Vertices[0][Y] == Vertices[1][Y])
+				{
 					// Top Edge
-					if (Vertices[0][X] < Vertices[1][X]) {
+					if (Vertices[0][X] < Vertices[1][X])
+					{
 						// Leave alone
 					}
-					else if (Vertices[0][X] > Vertices[1][X]) {
+					else if (Vertices[0][X] > Vertices[1][X])
+					{
 						// Swap V0 and V1
 						GzCoord temp;
 						memcpy(temp, Vertices[0], sizeof(GzCoord));
 						memcpy(Vertices[0], Vertices[1], sizeof(GzCoord));
 						memcpy(Vertices[1], temp, sizeof(GzCoord));
 					}
-					else {
+					else
+					{
 						// Top edge is a line in the z-axis (triangle appears as vertical line)
 						// TODO: what???
 						// Assuming we won't have to deal with this for now?
@@ -579,19 +588,23 @@ int GzPutTriangle(GzRender	*render, int numParts, GzToken *nameList, GzPointer	*
 					edgeTypes[1] = RIGHT_EDGE;
 					edgeTypes[2] = LEFT_EDGE;
 				}
-				else if (Vertices[1][Y] == Vertices[2][Y]) {
+				else if (Vertices[1][Y] == Vertices[2][Y])
+				{
 					// Bottom Edge
-					if (Vertices[1][X] < Vertices[2][X]) {
+					if (Vertices[1][X] < Vertices[2][X])
+					{
 						// Swap V1 and V2
 						GzCoord temp;
 						memcpy(temp, Vertices[1], sizeof(GzCoord));
 						memcpy(Vertices[1], Vertices[2], sizeof(GzCoord));
 						memcpy(Vertices[2], temp, sizeof(GzCoord));
 					}
-					else if (Vertices[1][X] > Vertices[2][X]) {
+					else if (Vertices[1][X] > Vertices[2][X])
+					{
 						// Leave alone
 					}
-					else {
+					else
+					{
 						// Bottom edge is a line in the z-axis (triangle appears as vertical line)
 						// TODO: what???
 						// Assuming we won't have to deal with this for now?
@@ -604,12 +617,14 @@ int GzPutTriangle(GzRender	*render, int numParts, GzToken *nameList, GzPointer	*
 					edgeTypes[1] = BOTTOM_EDGE;
 					edgeTypes[2] = LEFT_EDGE;
 				}
-				else {
+				else
+				{
 					// Non-Horizontal Edges
 					float dY = Vertices[2][Y] - Vertices[0][Y];
 					float dX = Vertices[2][X] - Vertices[0][X];
 					float oppositeEdgeX = Vertices[0][X] + (dX / dY) * (Vertices[1][Y] - Vertices[0][Y]);
-					if (oppositeEdgeX < Vertices[1][X]) {
+					if (oppositeEdgeX < Vertices[1][X])
+					{
 						// V1 is R-edge
 						// Don't need to do anything (leave order of vertices)
 						// E1 is a right edge
@@ -626,7 +641,8 @@ int GzPutTriangle(GzRender	*render, int numParts, GzToken *nameList, GzPointer	*
 						// E1 is a left edge
 						edgeTypes[1] = LEFT_EDGE;
 					}
-					else {
+					else
+					{
 						// Weird case where all edges have same slope (triangle appears as line)
 						// TODO: what???
 						// Assuming we won't have to deal with this for now?
@@ -641,7 +657,8 @@ int GzPutTriangle(GzRender	*render, int numParts, GzToken *nameList, GzPointer	*
 
 				// Compute projection for vertices, compute the E_i
 				float A[3], B[3], C[3];
-				for (int j = 0; j < 3; ++j) {
+				for (int j = 0; j < 3; ++j)
+				{
 					float dX = Vertices[(j + 1) % 3][X] - Vertices[j][X];
 					float dY = Vertices[(j + 1) % 3][Y] - Vertices[j][Y];
 					A[j] = dY;
@@ -670,8 +687,10 @@ int GzPutTriangle(GzRender	*render, int numParts, GzToken *nameList, GzPointer	*
 				getPlane(Vertices, &NA, &NB, &NC, &ND);
 
 				// For all pixels in bbox
-				for (int i = xmin; i < xmax; ++i) {
-					for (int j = ymin; j < ymax; ++j) {
+				for (int i = xmin; i < xmax; ++i)
+				{
+					for (int j = ymin; j < ymax; ++j)
+					{
 						// Evaluate edge functions a_i * x + b_i * y + c_i
 						float E0 = A[0] * i + B[0] * j + C[0];
 						float E1 = A[1] * i + B[1] * j + C[1];
@@ -680,26 +699,33 @@ int GzPutTriangle(GzRender	*render, int numParts, GzToken *nameList, GzPointer	*
 						int s1 = sign(E1);
 						int s2 = sign(E2);
 
-						if (s0 == 0) {
-							if (!(edgeTypes[0] == LEFT_EDGE || edgeTypes[0] == TOP_EDGE)) {
+						if (s0 == 0)
+						{
+							if (!(edgeTypes[0] == LEFT_EDGE || edgeTypes[0] == TOP_EDGE))
+							{
 								// On edge 0 but edge 0 is neither a left or top edge
 								continue;
 							}
 						}
-						if (s1 == 0) {
-							if (!(edgeTypes[1] == LEFT_EDGE || edgeTypes[1] == TOP_EDGE)) {
+						if (s1 == 0)
+						{
+							if (!(edgeTypes[1] == LEFT_EDGE || edgeTypes[1] == TOP_EDGE))
+							{
 								// On edge 1 but edge 1 is neither a left or top edge
 								continue;
 							}
 						}
-						if (s2 == 0) {
-							if (!(edgeTypes[2] == LEFT_EDGE || edgeTypes[2] == TOP_EDGE)) {
+						if (s2 == 0)
+						{
+							if (!(edgeTypes[2] == LEFT_EDGE || edgeTypes[2] == TOP_EDGE))
+							{
 								// On edge 2 but edge 2 is neither a left or top edge
 								continue;
 							}
 						}
 
-						if (!((s0 == s1) && (s1 == s2) && (s0 == s2))) {
+						if (!((s0 == s1) && (s1 == s2) && (s0 == s2)))
+						{
 							// Outside the triangle
 							continue;
 						}
@@ -710,7 +736,8 @@ int GzPutTriangle(GzRender	*render, int numParts, GzToken *nameList, GzPointer	*
 						GzGetDisplay(render->display, i, j, &r, &g, &b, &a, &z);
 						// Interpolate z-depth
 						float interpZ = interpolateZ(NA, NB, NC, ND, i, j);
-						if (interpZ < z || z == 0) {
+						if (interpZ < z || z == 0)
+						{
 							// closer - update pixel
 							GzPutDisplay(render->display, i, j, ctoi(render->flatcolor[RED]), ctoi(render->flatcolor[GREEN]), ctoi(render->flatcolor[BLUE]), a, interpZ);
 						}
@@ -743,7 +770,8 @@ void sortTriangleVertices(float * values, int ** sortedIndices)
 	int tempIndex;
 	float tempFloat;
 
-	if (v0 > v1) {
+	if (v0 > v1)
+	{
 		tempIndex = (*sortedIndices)[0];
 		(*sortedIndices)[0] = (*sortedIndices)[1];
 		(*sortedIndices)[1] = tempIndex;
@@ -751,7 +779,8 @@ void sortTriangleVertices(float * values, int ** sortedIndices)
 		v0 = v1;
 		v1 = tempFloat;
 	}
-	if (v1 > v2) {
+	if (v1 > v2)
+	{
 		tempIndex = (*sortedIndices)[1];
 		(*sortedIndices)[1] = (*sortedIndices)[2];
 		(*sortedIndices)[2] = tempIndex;
@@ -759,7 +788,8 @@ void sortTriangleVertices(float * values, int ** sortedIndices)
 		v1 = v2;
 		v2 = tempFloat;
 	}
-	if (v0 > v1) {
+	if (v0 > v1)
+	{
 		tempIndex = (*sortedIndices)[0];
 		(*sortedIndices)[0] = (*sortedIndices)[1];
 		(*sortedIndices)[1] = tempIndex;
@@ -769,14 +799,17 @@ void sortTriangleVertices(float * values, int ** sortedIndices)
 	}
 }
 
-int sign(float value) {
-	if (value == 0) {
+int sign(float value)
+{
+	if (value == 0)
+	{
 		return 0;
 	}
 	return fabsf(value) / value;
 }
 
-void getPlane(GzCoord * triangleVertices, float * A, float * B, float * C, float * D) {
+void getPlane(GzCoord * triangleVertices, float * A, float * B, float * C, float * D)
+{
 	float X1 = triangleVertices[1][X] - triangleVertices[0][X];
 	float Y1 = triangleVertices[1][Y] - triangleVertices[0][Y];
 	float Z1 = triangleVertices[1][Z] - triangleVertices[0][Z];
@@ -792,7 +825,8 @@ void getPlane(GzCoord * triangleVertices, float * A, float * B, float * C, float
 	*D = -1 * ((*A)*x + (*B)*y + (*C)*z);
 }
 
-float interpolateZ(float A, float B, float C, float D, float x, float y) {
+float interpolateZ(float A, float B, float C, float D, float x, float y)
+{
 	return -1 * (A*x + B*y + D) / C;
 }
 

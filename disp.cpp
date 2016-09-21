@@ -39,7 +39,8 @@ int GzNewDisplay(GzDisplay	**display, int xRes, int yRes)
 int GzFreeDisplay(GzDisplay	*display)
 {
 /* HW1.3 clean up, free memory */
-	if (display != NULL) {
+	if (display != NULL)
+	{
 		free(display);
 	}
 	return GZ_SUCCESS;
@@ -49,7 +50,8 @@ int GzFreeDisplay(GzDisplay	*display)
 int GzGetDisplayParams(GzDisplay *display, int *xRes, int *yRes)
 {
 /* HW1.4 pass back values for a display */
-	if (display != NULL) {
+	if (display != NULL)
+	{
 		// load resolution values into input integer pointers
 		*xRes = display->xres;
 		*yRes = display->yres;
@@ -62,9 +64,12 @@ int GzGetDisplayParams(GzDisplay *display, int *xRes, int *yRes)
 int GzInitDisplay(GzDisplay	*display)
 {
 /* HW1.5 set everything to some default values - start a new frame */
-	if (display != NULL) {
-		for (int i = 0; i < display->xres; ++i) {
-			for (int j = 0; j < display->yres; j++) {
+	if (display != NULL)
+	{
+		for (int i = 0; i < display->xres; ++i)
+		{
+			for (int j = 0; j < display->yres; j++)
+			{
 				GzPixel * pixel = &display->fbuf[ARRAY(i, j)];
 				// arbitrary values chosen (this is going to be the background
 				pixel->red = 2000;
@@ -87,9 +92,11 @@ int GzPutDisplay(GzDisplay *display, int i, int j, GzIntensity r, GzIntensity g,
 	r = max(0, min(4095, r));
 	b = max(0, min(4095, b));
 	g = max(0, min(4095, g));
-	if (display != NULL) {
+	if (display != NULL)
+	{
 		// don't bother updating framebuffer if out of bounds
-		if (i >= 0 && i < display->xres && j >= 0 && j < display->yres) {
+		if (i >= 0 && i < display->xres && j >= 0 && j < display->yres)
+		{
 			// set pixel values
 			GzPixel * pixel = &display->fbuf[ARRAY(i, j)];
 			pixel->red = r;
@@ -107,9 +114,11 @@ int GzPutDisplay(GzDisplay *display, int i, int j, GzIntensity r, GzIntensity g,
 int GzGetDisplay(GzDisplay *display, int i, int j, GzIntensity *r, GzIntensity *g, GzIntensity *b, GzIntensity *a, GzDepth *z)
 {
 /* HW1.7 pass back a pixel value to the display */
-	if (display != NULL) {
+	if (display != NULL)
+	{
 		// don't bother for out of bounds values
-		if (i >= 0 && i < display->xres && j >= 0 && j < display->yres) {
+		if (i >= 0 && i < display->xres && j >= 0 && j < display->yres)
+		{
 			// get pixel values
 			GzPixel * pixel = &display->fbuf[ARRAY(i, j)];
 			*r = pixel->red;
@@ -128,14 +137,17 @@ int GzFlushDisplay2File(FILE* outfile, GzDisplay *display)
 {
 
 /* HW1.8 write pixels to ppm file -- "P6 %d %d 255\r" */
-	if (display != NULL && outfile != NULL) {
+	if (display != NULL && outfile != NULL)
+	{
 		int xRes = display->xres;
 		int yRes = display->yres;
 		// header file for ppm
 		fprintf(outfile, "P6 %d %d 255\r", xRes, yRes);
 		char r, g, b;
-		for (int j = 0; j < yRes; ++j) {
-			for (int i = 0; i < xRes; ++i) {
+		for (int j = 0; j < yRes; ++j)
+		{
+			for (int i = 0; i < xRes; ++i)
+			{
 				GzPixel * pixel = &display->fbuf[ARRAY(i, j)];
 				r = pixel->red >> 4;
 				g = pixel->green >> 4;
@@ -157,12 +169,15 @@ int GzFlushDisplay2FrameBuffer(char* framebuffer, GzDisplay *display)
 	- CAUTION: when storing the pixels into the frame buffer, the order is blue, green, and red 
 	- NOT red, green, and blue !!!
 */
-	if (display != NULL && framebuffer != NULL) {
+	if (display != NULL && framebuffer != NULL)
+	{
 		int xRes = display->xres;
 		int yRes = display->yres;
 		char r, g, b;
-		for (int i = 0; i < xRes; ++i) {
-			for (int j = 0; j < yRes; ++j) {
+		for (int i = 0; i < xRes; ++i)
+		{
+			for (int j = 0; j < yRes; ++j)
+			{
 				int index = ARRAY(i, j);
 				GzPixel * pixel = &display->fbuf[index];
 				r = pixel->red >> 4;
