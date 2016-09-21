@@ -148,7 +148,7 @@ int GzNewRender(GzRender **render, GzDisplay	*display)
 		// malloc a renderer struct
 		*render = (GzRender *)malloc(sizeof(GzRender));
 
-		// TODO: setup Xsp and anything only done once
+		// setup Xsp and anything only done once
 		int xs = display->xres;
 		int ys = display->yres;
 		(*render)->Xsp[0][0] = xs / 2.0f;
@@ -211,13 +211,22 @@ int GzBeginRender(GzRender *render)
 - now stack contains Xsw and app can push model Xforms when needed 
 */ 
 	int status = GZ_SUCCESS;
-	if (render != NULL && render->display != NULL) {
+	if (render != NULL && render->display != NULL)
+	{
+		// init frame buffer, color, alpha, z
+		if (render->display->fbuf == NULL)
+		{
+			render->display->fbuf = (GzPixel *)malloc(sizeof(GzPixel) * render->display->xres * render->display->yres);
+		}
 		status |= GzInitDisplay(render->display);
 		render->flatcolor[RED] = 0;
 		render->flatcolor[GREEN] = 0;
 		render->flatcolor[BLUE] = 0;
 
-		// TODO: do I need to do this now?
+		// compute Xiw and projection xform Xpi from camera definition
+		
+		// Xpi
+		float dInv = tan(((render)->camera.FOV / 2) * (PI / 180));
 		(render)->camera.Xpi[0][0] = 1;
 		(render)->camera.Xpi[0][1] = 0;
 		(render)->camera.Xpi[0][2] = 0;
@@ -228,12 +237,79 @@ int GzBeginRender(GzRender *render)
 		(render)->camera.Xpi[1][3] = 0;
 		(render)->camera.Xpi[2][0] = 0;
 		(render)->camera.Xpi[2][1] = 0;
-		(render)->camera.Xpi[2][2] = 1 / tan(((render)->camera.FOV / 2) * (PI / 180));
+		(render)->camera.Xpi[2][2] = dInv;
 		(render)->camera.Xpi[2][3] = 0;
 		(render)->camera.Xpi[3][0] = 0;
 		(render)->camera.Xpi[3][1] = 0;
-		(render)->camera.Xpi[3][2] = 0;
+		(render)->camera.Xpi[3][2] = dInv;
 		(render)->camera.Xpi[3][3] = 1;
+
+		// Xiw
+		GzCoord cl, upPrime, cameraZaxis, cameraYaxis, cameraXaxis;
+		
+		// Z = cl / ||cl||
+		cl[X] = render->camera.lookat[X] - render->camera.position[X];
+		cl[Y] = render->camera.lookat[Y] - render->camera.position[Y];
+		cl[Z] = render->camera.lookat[Z] - render->camera.position[Z];
+		float mag_cl = sqrt(pow(cl[X],2) + pow(cl[Y],2) + pow(cl[Z],2));
+		cameraZaxis[X] = cl[X] / mag_cl;
+		cameraZaxis[Y] = cl[Y] / mag_cl;
+		cameraZaxis[Z] = cl[Z] / mag_cl;
+		
+		// up' = up - (up . Z)Z
+		// Y = up' / ||up'||
+		float upDotZ =
+			render->camera.worldup[X] * cameraZaxis[X] +
+			render->camera.worldup[Y] * cameraZaxis[Y] +
+			render->camera.worldup[Z] * cameraZaxis[Z];
+		upPrime[X] = render->camera.worldup[X] - (upDotZ * cameraZaxis[X]);
+		upPrime[Y] = render->camera.worldup[Y] - (upDotZ * cameraZaxis[Y]);
+		upPrime[Z] = render->camera.worldup[Z] - (upDotZ * cameraZaxis[Z]);
+		float mag_upPrime = sqrt(pow(upPrime[X], 2) + pow(upPrime[Y], 2) + pow(upPrime[Z], 2));
+		cameraYaxis[X] = upPrime[X] / mag_upPrime;
+		cameraYaxis[Y] = upPrime[Y] / mag_upPrime;
+		cameraYaxis[Z] = upPrime[Z] / mag_upPrime;
+
+		// X = (Y x X)
+		cameraXaxis[X] = cameraYaxis[Y] * cameraZaxis[Z] - cameraYaxis[Z] * cameraZaxis[Y];
+		cameraXaxis[Y] = cameraYaxis[Z] * cameraZaxis[X] - cameraYaxis[X] * cameraZaxis[Z];
+		cameraXaxis[Z] = cameraYaxis[X] * cameraZaxis[Y] - cameraYaxis[Y] * cameraZaxis[X];
+
+		// Xiw
+		float xDotC =
+			cameraXaxis[X] * render->camera.position[X] +
+			cameraXaxis[Y] * render->camera.position[Y] +
+			cameraXaxis[Z] * render->camera.position[Z];
+		float yDotC =
+			cameraYaxis[X] * render->camera.position[X] +
+			cameraYaxis[Y] * render->camera.position[Y] +
+			cameraYaxis[Z] * render->camera.position[Z];
+		float zDotC =
+			cameraZaxis[X] * render->camera.position[X] +
+			cameraZaxis[Y] * render->camera.position[Y] +
+			cameraZaxis[Z] * render->camera.position[Z];
+		render->camera.Xiw[0][0] = cameraXaxis[X];
+		render->camera.Xiw[0][1] = cameraXaxis[Y];
+		render->camera.Xiw[0][2] = cameraXaxis[Z];
+		render->camera.Xiw[0][3] = -xDotC;
+		render->camera.Xiw[1][0] = cameraYaxis[X];
+		render->camera.Xiw[1][1] = cameraYaxis[Y];
+		render->camera.Xiw[1][2] = cameraYaxis[Z];
+		render->camera.Xiw[1][3] = -yDotC;
+		render->camera.Xiw[2][0] = cameraZaxis[X];
+		render->camera.Xiw[2][1] = cameraZaxis[Y];
+		render->camera.Xiw[2][2] = cameraZaxis[Z];
+		render->camera.Xiw[2][3] = -zDotC;
+		render->camera.Xiw[3][0] = 0;
+		render->camera.Xiw[3][1] = 0;
+		render->camera.Xiw[3][2] = 0;
+		render->camera.Xiw[3][3] = 1;
+
+		// init Ximage - put Xsp at base of stack, push on Xpi and Xiw
+		// now stack contains Xsw and app can push model Xforms when needed 
+		GzPushMatrix(render, render->Xsp);
+		GzPushMatrix(render, render->camera.Xpi);
+		GzPushMatrix(render, render->camera.Xiw);
 	}
 	return status;
 }
@@ -243,7 +319,26 @@ int GzPutCamera(GzRender *render, GzCamera *camera)
 /*
 - overwrite renderer camera structure with new camera definition
 */
-	return GZ_SUCCESS;	
+	// TODO
+	if (render == NULL)
+	{
+		return GZ_FAILURE;
+	}
+	render->camera.position[X] = camera->position[X];
+	render->camera.position[Y] = camera->position[Y];
+	render->camera.position[Z] = camera->position[Z];
+	render->camera.lookat[X] = camera->lookat[X];
+	render->camera.lookat[Y] = camera->lookat[Y];
+	render->camera.lookat[Z] = camera->lookat[Z];
+	render->camera.worldup[X] = camera->worldup[X];
+	render->camera.worldup[Y] = camera->worldup[Y];
+	render->camera.worldup[Z] = camera->worldup[Z];
+	render->camera.FOV = camera->FOV;
+	float dInv = tan((camera->FOV / 2) * (PI / 180));
+	render->camera.Xpi[2][2] = dInv;
+	render->camera.Xpi[3][2] = dInv;
+	// TODO: what about camera.Xiw?
+	return GZ_SUCCESS;
 }
 
 int GzPushMatrix(GzRender *render, GzMatrix	matrix)
@@ -331,12 +426,11 @@ int GzPutAttribute(GzRender	*render, int numAttributes, GzToken	*nameList,
 - set renderer attribute states (e.g.: GZ_RGB_COLOR default color)
 - later set shaders, interpolaters, texture maps, and lights
 */
-	
 	if (render != NULL) {
 		for (int i = 0; i < numAttributes; ++i) {
 			switch (nameList[i]) {
 			case GZ_RGB_COLOR:
-				// TODO: Do I have to increment through tokens (ints) and use (sizeof) token type
+				// LATER: Do I have to increment through tokens (ints) and use (sizeof) token type
 				// to increment the ponter through the value list
 				GzColor * color = (GzColor *)valueList[i];
 				// clamp color values
@@ -366,6 +460,7 @@ int GzPutTriangle(GzRender	*render, int numParts, GzToken *nameList, GzPointer	*
        - optional: test for triangles with all three verts off-screen (trivial frustum cull)
 - invoke triangle rasterizer  
 */ 
+	// TODO
 	return GZ_SUCCESS;
 }
 
